@@ -1,0 +1,100 @@
+---
+title: "In-Class Activity: Functional Programming"
+author: "K Bodwin"
+date: "February 4, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+
+```
+
+Copy your `sing_song` function (and any other functions it depends on) into the chunk below.  Change the part that says "my true love sent to me" to "my college gave to me".
+
+```{r}
+library(tidyverse)
+
+pluralize_gifts <- function(gifts, days){
+  
+  skip <- days==1|str_detect(gifts,pattern = "y$")|str_detect(gifts,pattern = "oo")
+  
+  gifts <- gifts %>%  
+    str_replace("y$","ies")%>%
+    str_replace("oo","ee")
+        
+    gifts[!skip] <- paste0(gifts[!skip],"s")
+    
+  
+  return(gifts)
+  
+} 
+
+make_phrase <- function(num, item, verb, adjective, location){
+  
+  #i have decided its bettter to take care of the numbers here
+  
+  num_strings <- c("a","two","three","four","five","six","seven","eight","nine","ten","eleven","twelve")
+  
+  after <- num>5
+  
+  phrase <- paste(num[!after],str_replace_na(verb,"")[!after],str_replace_na(adjective,"")[!after],item[!after],str_replace_na(location,"")[!after])
+  
+  phrase <- c(phrase,paste(num[after],item[after],str_replace_na(verb,"")[after],str_replace_na(adjective,"")[after],str_replace_na(location,"")[after]))
+  
+  phrase <- str_replace(phrase,pattern = as.character(num), replacement = str_trim(num_strings))
+  phrase <- str_trim(phrase)
+  return(phrase)
+}
+
+sing_line <- function(xmas, num){
+  
+  phrase <- paste("On the", xmas$Day.in.Words[num], "day of Christmas, my college gave to me, ")
+  
+  for(j in num:1){
+    
+    if(num==1){
+      phrase <- c(phrase,paste0(xmas$phrases[j],"."))
+    }
+    else if(num==2 & j== 2){
+      phrase <- c(phrase,xmas$phrases[j])
+    }
+    else if(num!=1 & j == 1){
+      phrase<- c(phrase, paste0(" and ",xmas$phrases[j],"."))
+    }
+    else{
+      phrase<- c(phrase, paste0(xmas$phrases[j],", "))
+    }
+      
+  }
+  
+  return(str_c(phrase,collapse = ""))
+  
+}
+
+
+
+sing_song <- function(xmas){
+  xmas <- xmas %>%
+    mutate(Plural.Gifts = pluralize_gifts(Gift.Item,Day))%>%
+    mutate(phrases = make_phrase(Day,Plural.Gifts,Verb,Adjective, Location))
+  1:12 %>%
+    map(function(x) sing_line(xmas, x))%>%
+    unlist()
+}
+
+```
+
+Then knit the file and turn it in to PolyLearn.
+
+```{r}
+### DO NOT CHANGE ANYTHING IN THIS CHUNK
+
+xmas2 <- read.csv("https://www.dropbox.com/s/ap2hqssese1ki4j/xmas_2.csv?dl=1")
+
+sing_song(xmas2)
+
+```
+
+

@@ -1,0 +1,154 @@
+---
+title: "8_Activity_Testing"
+author: ""
+date: "February 6, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(broom)
+
+data("starwars")
+```
+
+# Instructions
+
+The dataset "starwars" has been loaded for you.  Take a look at it and understand the variables. 
+
+## Writing your own t-test
+
+Write a function called `run_t_test` that takes as input two vectors of numbers, and an option for the alternative hypothesis, and gives back the results of a t-test for equality of means.  You may not use the function `t.test()` except to check that your version is working correctly.
+
+```{r}
+run_t_test <- function(x, y, alternative = "two.sided"){
+  
+  mean1 = mean(x)
+  mean2 = mean(y)
+  
+  sd1 = sd(x)
+  sd2 = sd(y)
+  
+  length1 = length(x)
+  length2 = length(y)
+  
+  dof <- min(length1, length2) - 1
+
+  t = (mean1-mean2)/sqrt((sd1^2/length1)+(sd2^2/length2))
+  
+  if(alternative == "greater"){
+    p = 1-pt(t,dof)
+  }
+  
+  else if(alternative == "less"){
+    p = pt(t,dof) 
+  }
+  else{
+    if(t>0){
+      p=2*(1-pt(t,dof))
+    }
+    else{
+      p=2*pt(t,dof)
+    }
+  }
+  
+  
+  return(list(test.stat = t, df = dof, p.val = p))
+}
+
+```
+
+Use your t-test function to answer the following:
+
+1. Are Humans or Droids taller?
+
+We are conducting a t-test to see if humans are taller than droids. Our null hypothesis is that humans and droids have the same population mean in height. Our alternative hypothesis is that the population mean in height for humans is larger than that of droids.
+
+
+According the t-test, the test statistic is 1.404, the degrees of freedom = 3, and the p-value is 0.127.
+
+Standard values for alpha are 0.01,0.05, and 0.1. In all three values of alpha, the p-value is greater. As a result, we fail to reject the null hypothesis that
+the population mean height for humans are the same as droids. However, if we set out alpha to be greater than p-value, we can say with about 88% confidence that the population mean for height among humans is greater than that of droids, though with only 4 droids with heights, which implies that humans are taller than droids. But with only 4 droids and 88% confidence, it is not a truly solid argument. There is no real argument for whether humans are taller than droids or not.
+
+```{r}
+
+humanHeight <- starwars %>%
+  filter(species == "Human"& !is.na(height))%>%
+  pull(height)
+
+droidHeight <- starwars %>%
+  filter(species == "Droid" & !is.na(height))%>%
+  pull(height)
+
+
+run_t_test(humanHeight,droidHeight,"greater")
+```
+
+2. Do men or women weigh more?
+
+We are conducting a t-test to see if men weigh more than women. Our null hypothesis is that men and womoen have the same population mean weight. Our alternative hypothesis is that the population mean weight for men is more than that of women.
+
+According to the t-test, the test statistic is 5.384718, the degrees of freedom is 9, and our p-value is 0.0002. Using an alpha of 0.01, we can say with 99% confidence that we can reject the null hypothesis in favor of the alternative hypothesis. This t test implies that men weigh more than women since the population mean for weight of men is greater than that of women.
+```{r}
+
+menWeight <- starwars %>%
+  filter(gender == "male" & !is.na(mass))%>%
+  pull(mass)
+
+womenWeight <- starwars %>%
+  filter(gender == "female" & !is.na(mass))%>%
+  pull(mass)
+
+run_t_test(menWeight,womenWeight,"greater")
+```
+
+
+## Chi-square tests
+
+Use the function `chisq.test()` to answer the following:
+
+1. Is there a relationship between hair color and eye color?
+
+We are conducting a chi-square test of independence to see if their is a relationship between hair color and eye color. Our null hypothesis is that hair color and eye color are independent. Our alternative hypothesis is that hair color and eye color are not independent.
+
+According to the test, X-squared is 210.67, degrees of freedom is 154, and the p-value is 0.001653. Using an alpha of 0.01, we can say with 99% confidence that we can reject the null hypothesis in favor of the alternative hypothesis. This chi-square test of independence implies that their is a relationship between hair and eye color since it is very unlikely the null hypothesis is true.
+
+```{r}
+
+hair <- starwars %>%
+  filter(!is.na(hair_color)&!is.na(eye_color))%>%
+  pull(hair_color)
+
+eye <- starwars %>%
+  filter(!is.na(hair_color)&!is.na(eye_color))%>%
+  pull(eye_color)
+
+chisq.test(hair, eye)
+
+```
+
+2. Do Droids tend to come from some homeworlds more than others?
+
+We are conducting a chi-square test of independence to see if their is a relationship between droids and their homeworlds. Our null hypothesis is that droids and their homeworlds are independent. Our alternative hypothesis is that they are related.
+
+According to the test, X-squared is 3, degrees of freedom is 2, and the p-value is 0.2231. Standard values for alpha are 0.01,0.05, and 0.1. In all three values of alpha, the p-value is greater. It is best not to go beyond 0.1, since it is the probability of a type I error that we allow, especially considering there are only 3 subjects. As a result, we fail to reject the null hypothesis that droids and their homeworlds are independent, and this test is inconclusive. So we cannot say if droids tend to come from some homeworlds over others.
+```{r}
+
+droid <- starwars %>%
+  filter(species== "Droid" & !is.na(homeworld))%>%
+  pull(name)
+
+homeworld <- starwars %>%
+  filter(species== "Droid" & !is.na(homeworld))%>%
+  pull(homeworld)
+
+chisq.test(droid,homeworld)
+
+```
+
+
+

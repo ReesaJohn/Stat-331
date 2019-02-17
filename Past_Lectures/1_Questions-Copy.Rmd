@@ -1,0 +1,107 @@
+---
+title: "Questions for Class Activity 1"
+author: "YOUR NAME HERE"
+date: "January 7, 2019"
+output: html_document
+---
+
+1a) How many students have filled out the survey so far?
+
+```
+
+33 Students
+
+```
+
+1b) What possible issues do you see with the way your survey data was stored in the dataset `survey_orig`?
+
+```
+When you look at the data, it's very spaced out and wordy. As a result, it is hard to get relevant information out of the
+original survey.
+
+```
+
+2a) Why do you think we might have taken made a new dataset, `free_response`?
+
+```
+Unlike the other questions where you select from options, for free response questions, you make your own answers. As a result, it would be more convenient to create a new dataset from the free response questions so you can do different things
+to it to get relevant information
+```
+
+2b) Explain in words what is different about the dataset `survey` as compared to `survey_orig`.
+
+```
+
+It's a lot more concise compared to the original survey by getting rid of a lot of extraneous words, which are useful when conducting the survey, but not when looking for information. In the case of the question regarding prior experience in R, it uses keywords in the given answers to sort if a student has had a job, done research, or taken a class with R.
+
+```
+
+### Questions:
+
+3a) What did you learn about majors and minors of 331 students?
+
+```
+If they are a Computer Science major, they are more likely to not have a minor but otherwise are Data Science minors. For other majors apart from Statistics, they are more likely to be Statistics minors, except for Biology, who generally do not have a minor. In the case of Statistics, it seems to be an even division of none, Data Science, and other.
+
+```
+
+
+3b) What did you learn about Kardashian preference and politics?
+
+```
+Democrats were the only one that cared to answer the question, and most chose Kanye. That said, the overwhelming majority of the students are democrats, with I don't follow politics being a distant second.
+
+```
+
+
+3c) What did you learn about the relationship between hot dog definitions, political preference, and major?
+
+```
+Democrats regardless of major, apart from business said neither, and in business major they said a sandwich. If they weren't Democrat, sandwich, followed by neither were next popular, but the vast majority of the class is Democratic, so it's not quite fair to say.
+
+```
+
+
+### Questions:
+
+4a) Use your console to look at `survey_courses_1` and `survey_courses_2`.  Explain the difference between these.
+
+
+```
+
+Survey courses 1 looks only at basic information like major, minor, year, and the number of Stat and CS classes a student took. Survey courses 2 on the other hand has most of the information on the survey, but regarding number of classes, it only shows whether a student took more CS or Stats classes and the number of classes for the type of class they took the most of.
+
+```
+
+
+4b) Why might we want two different styles of data?
+
+
+```
+The first data set has commonly used information that could answer questions related purely on school related matters. So for questions that only looks at school related things, it would be far easier to work with that data set. However if we wanted most of the data, we could use the second set which contains most of the information we gathered (apart from the numbers for both CS and Stats classes taken), though it would take more effort to work with that data set.
+
+```
+
+4c) What did you learn about coursework and majors?
+
+
+```
+
+Unfortunately someone entered 10+ for the number of CS classes they took and messed up the box plot, and I cannot understand the data from the graph.
+
+```
+
+5a) What did you observe about the opinions of Cal Poly students over their course of study?
+
+```
+
+It seemed to be all positive sentiments, at least among the juniors and seniors. The data for sophmores and freshman were not shown
+
+```
+
+5b) What fun things did you notice in the word clouds?
+
+```
+
+Ignoring words like,and, the, and to, learning seems to be the most used word in both clouds so people are both nervous and excited to learn. In the nervous cloud, behind, coding, programming difficulty, and syntax seemed to be things people were nervous about, so I guess people are scared to code. Second to learning and ignoring other words, r came up in excited, so I guess people are very excited to learn r. There wasn't anything I thought was particularly significant beyond that in either clouds, but given the frequencies of articles in these word clouds, people use those words a lot in daily language.
+```

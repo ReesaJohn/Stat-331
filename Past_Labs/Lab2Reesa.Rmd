@@ -1,0 +1,150 @@
+---
+title: "Lab2"
+author: "Reesa John"
+date: "1/26/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+avo <- read.csv("https://www.dropbox.com/s/vsc1dkosz6nwake/avocado.csv?dl=1")
+
+## put this at the beginning of all your Rmarkdown projects:
+
+library(tidyverse)
+```
+Preliminary Info:
+Product Lookup Code (PLU): (X)4046 - Total # of Small Hass #60 sizes and smaller sold
+                           (X)4225 - Total # of Large Hass #40 & #48 sizes sold
+                           (X)4770 - Total # of X-Large Hass #36 sizes and larger sold
+                           
+X1 does not seem to be a meaningful variable
+
+Exploring the dataset:
+```{r}
+avo <- avo %>% select(-X1)
+summary(avo)
+```
+
+1) Which region sold the most bags of small organic avocados in 2017?
+Hint: TotalUS does not count as a region!
+
+The region that sold the most bags of small organic avocados in 2017 is the Northeast.
+
+```{r}
+avo %>% 
+  filter(region!="TotalUS",type =="organic", year ==2017)%>%
+  top_n(1,Small.Bags)%>%
+  select(region)
+```
+
+
+2) Use separate() to split the Date variable into year, month, and day. In which month is the highest
+volume of avocado sales?
+
+On average, January tends to sell the highest volume of avocadoes, though the highest monthly avocado sales in any year was in the March of 2018.
+```{r}
+tempAvo1 <-  avo %>%
+  select(-year)%>%
+  separate(Date,into = c("year","month","day"))%>%
+  group_by(month,year)%>%
+  summarize(monthlyVolume=sum(Total.Volume))
+
+tempAvo1 %>%
+  group_by(month)%>%
+  summarize(averageMonthlyVolume = mean(monthlyVolume))%>%
+  top_n(1,averageMonthlyVolume)
+
+tempAvo1%>%
+  unite("YearMonth", c(month,year), sep = "-")%>%
+  top_n(1,monthlyVolume)
+  
+  
+
+```
+
+
+3) Which regions sell the most avocados by volume? Plot side-by-side boxplots of Total Volume for only
+the 5 regions with the highest averages for the Total Volume variable.
+Hint: Once you narrow down to the top 5 regions, you can use pull() to save the vector of region names
+for later use.
+
+The five regions that sell the most avocados are California, Northeast, South Central, Southeast, and the West, though not in that order necessarily.
+```{r}
+top5 <- avo %>%
+  filter(region!="TotalUS")%>%
+  group_by(region)%>%
+  summarize(averageMonthlyVolume = mean(Total.Volume))%>%
+  top_n(5,averageMonthlyVolume) %>% 
+  arrange(desc(averageMonthlyVolume))%>%
+  pull(region)
+
+
+
+avo %>% 
+ filter(region %in% top5) %>%
+ ggplot(aes(x = region, y = Total.Volume, fill=region)) +ggtitle("Volume of Avocadoes Sold By Region")+xlab("Region")+ylab("Total Volume")+labs(fill="Region")+
+ geom_boxplot() 
+                     
+```
+
+
+The following four California regions are in this dataset: LosAngeles, SanDiego, Sacramento, SanFrancisco.
+Answer the following questions about the California regions only.
+Hint: These questions will require restructuring of your data!
+
+```{r}
+CalRegions <- c("LosAngeles", "SanDiego","Sacramento","SanFrancisco")
+CalRegions <- avo%>%
+  filter(region %in% CalRegions)
+
+```
+
+
+4) In which regions is the price of organic versus conventional avocados most different? Support your
+answer with a few summary numbers and a plot.
+
+Looking at the plot and table, San Francisco has the highest difference in average prices for organic vs conventional avocados at by around an 85 cents difference.
+
+```{r}
+diffByRegion <-  CalRegions %>%
+  select(AveragePrice,type,region)%>%
+  group_by(region,type)%>%
+  summarize(price = mean(AveragePrice))%>%
+  ungroup()%>%
+  spread(type,price)%>%
+  mutate("organicConventional" = organic-conventional)
+
+diffByRegion %>% group_by(region)%>%summarize(organicConventional)
+
+diffByRegion%>%ggplot(aes(x=region,y=organicConventional,fill=region))+ggtitle("Region vs Difference in Organic and Conventional Avocado Prices")+xlab("Region")+ylab("Organic - Conventional")+labs(fill="Region")+
+  geom_col()
+  
+```
+
+
+5) How do their avocado habits differ? Make a plot that shows, for all 4 California regions, the percent
+of avocado sales that are small, large, or extra large. Separate your plot by conventional vs. organic
+
+```{r}
+
+avoHabits <- CalRegions %>%
+  group_by(type,region)%>%
+  select(region,type,Small.Bags,Large.Bags,XLarge.Bags,Total.Bags)%>%
+  mutate(smallPct = Small.Bags/Total.Bags, largePct = Large.Bags/Total.Bags, xLargePct=XLarge.Bags/Total.Bags)%>%
+  summarize_at(vars(smallPct,largePct,xLargePct,Total.Bags), funs(mean), na.rm = TRUE)%>%
+  gather(key=typePct,percent,c("smallPct","largePct","xLargePct"))
+avoHabits%>%
+  ggplot(aes(x=region,y=percent,fill=typePct))+geom_col()+facet_grid(~type)+ggtitle("Avocado Habits")+
+  xlab("Region")+ylab("Percent")+scale_fill_discrete(name="Bag Type",
+                         breaks=c("smallPct","largePct","xLargePct"),
+                         labels=c("Small Bags", "Large Bags", "Extra Large Bags"))+scale_x_discrete(labels = c("Los\nAngeles","Sacramento","San\nDiego","San\nFrancisco"))
+
+```
+
+
+
+

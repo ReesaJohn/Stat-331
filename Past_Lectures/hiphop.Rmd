@@ -1,0 +1,98 @@
+---
+title: "HipHopData"
+author: "Reesa John"
+date: "1/9/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+1. Copy the following code into an R chunk, to load the data and gain access to the tidyverse package.
+
+```{r}
+
+hiphop <- read.csv("https://raw.githubusercontent.com/kbodwin/STAT-331/master/In-Class%20Activities/Data/hiphop.csv?token=AVHCwTQaeq5UylWJxCcNN8qYww6UIaLqks5cP75ewA%3D%3D") 
+library(tidyverse)
+
+
+```
+
+2. What are the variable names and types in this dataset?
+
+The variable names aree liste listed under data.frame. The data types are listed to the right of the colon. Factor indicates it is a categorical type data, and if it says int or num, it is a quantitative type data.
+
+```{r}
+str(hiphop)
+```
+
+3. What are the dimensions of the data set? Do the dimensions make sense considering the information given above about the study? Explain. Hint: Examine the subj and word variables.
+
+The dimensions of this data set is 10752 rows and 38 columns. This makes sense considering that each of the 168 subjects were asked to give their definition for 64 words. 168*64 = 10752. There are also 38 types of variables measured (most subject specific, except for familiarity, fam1, word, and trial, which were both word and subject specific).
+
+```{r}
+dim(hiphop)
+```
+
+
+4. Display the 64 AAE words that were tested, with no duplicates.
+
+The code written displays the column of the data frame where the AAE words were located, while eliminating the duplicates using unique().
+```{r}
+unique(hiphop[,"word"])
+```
+
+
+5. Get an overview of the hiphop data set. Which variables contain missing values?
+
+The variables containing missing values, that is, containing NA's, are numPreferredArtists numOverallArtists.
+```{r}
+summary(hiphop)
+```
+6. How many missing values are in the whole data set?
+
+
+There are 11264 misssing values in the whole data set.
+
+```{r}
+sum(is.na(hiphop))
+```
+
+7. Calculate the mean and standard deviation of numPreferredArtists. Hint:Because this variable has missingvalues, you will need to set the “na.rm” argument equal to TRUE.
+
+The mean is 0.34 and the standard deviation 0.74
+```{r}
+mean(hiphop[,"numPreferredArtists"], na.rm= TRUE)
+sd(hiphop[,"numPreferredArtists"], na.rm= TRUE)
+```
+
+8. Write code to create a new data frame called subject19 which only contains information for subject 19. What are the dimensions of this new data frame?
+
+The dimensions of this data frame is 64 rows and 38 columns.
+
+```{r}
+subject19 <- hiphop[hiphop$subj=="p19",]
+dim(subject19)
+```
+
+
+9. Display the familarity variable of the subject 19 data frame in two different ways.
+
+```{r}
+subject19[,"familiarity"]
+```
+
+```{r}
+subject19$familiarity
+```
+
+
+10. Write code to order this new data frame by familiarity from largest to smallest, retaining this sorting in the subject19 data frame (ie, you should not print out the data frame).
+
+```{r}
+subject19 <- subject19[order(subject19$familiarity),]
+
+
+```
+

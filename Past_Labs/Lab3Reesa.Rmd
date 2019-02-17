@@ -1,0 +1,182 @@
+---
+title: "Lab3Reesa"
+author: "Reesa John"
+date: "2/4/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(tidyverse)
+library(lubridate)
+songs <- read.table("https://www.dropbox.com/s/jrwjthqo9b5o07g/billboard_songs.txt?dl=1",header = TRUE,
+stringsAsFactors = FALSE)
+```
+
+```{r}
+
+#pattern = "y$" y at end
+
+songs <-songs %>%
+  mutate(chart.date = as.character(chart.date))%>%
+  mutate(chart.date = parse_date_time(chart.date,orders = "Ymd"))%>% 
+  mutate(featuring = case_when(
+    str_detect(artist,pattern="featuring") ~ str_replace(artist,pattern = ".* featuring ",replacement = "")))%>%
+  mutate(collaboration = case_when(
+    str_detect(artist,"&") & !str_detect(artist,pattern="featuring") ~ TRUE,
+    TRUE ~ FALSE
+    )
+  )
+
+```
+
+1) What 10 songs spent the longest on the charts? Give only the title, artist, and weeks.
+
+These are the top 10 songs that have spent the longest on the charts.
+
+```{r}
+songs %>%
+  arrange(desc(weeks.on.chart))%>%
+  select(title,artist,weeks.on.chart)%>%
+  top_n(10)
+  
+```
+
+2) What date did the oldest song(s) in this dataset leave the charts? Give only the date.
+
+The date is July 20th, 1940.
+```{r}
+songs %>% 
+  arrange(chart.date)%>%
+  top_n(wt=chart.date,-1)%>%
+  select(chart.date)%>%
+  unique()
+
+```
+
+3) What songs could have been played at your 16th birthday party? That is, which songs overall.peaked at #1 and entered the charts within a couple months (before or after) your 16th birthday? Give only
+the song title, artist, and date of chart entry.
+
+I'm looking at songs that entered the charts within 3 months of my 16th birthday, May 10th.
+
+```{r}
+
+near_my_birthday = ymd("2015-02-01")%--% ymd("2015-09-01")
+
+songs %>%
+  mutate(entered_chart = chart.date - weeks(weeks.on.chart))%>%
+  filter(entered_chart %within% near_my_birthday)%>%
+  select(title,entered_chart)
+
+```
+
+4) What is the most common word, at least 4 letters long, used in the title of any song? Give only the
+word itself, and its count.
+
+Love is the most common word.
+```{r}
+titles <- songs %>%
+pull(title)
+
+four_char_words <- titles %>%
+  str_split(pattern = " ")%>%
+  unlist() %>%
+  str_subset(pattern = ".{4,}")
+  
+  
+four_char_words %>%
+table() %>%
+sort() %>%
+rev() %>%
+head(1)
+
+```
+
+5) 
+For this question, you may ignore collaborations; i.e., “Ariana Grande” is considered a different artist from
+“Jessie J, Ariana Grande & Nicki Minaj”
+Hint: the function n() might help you summarize.
+
+Which five artists were the most successful in terms of:
+
+• Number of songs that were #1 hits
+
+The Beatles, Mariah Carey, Elvis Presley, Madonna, Michael Jackson would be.
+
+```{r}
+songs %>% 
+  filter(overall.peak==1)%>%
+  select(artist,overall.peak)%>%
+  group_by(artist)%>%
+  summarize(totalTop = sum(overall.peak))%>%
+  arrange(desc(totalTop))%>%
+  top_n(5)
+  
+```
+
+• Total weeks any of their songs spent on the chart.
+
+Elvis Presley, Elton John, Madonna, Perry Como, Kenny Chesney would be.
+
+```{r}
+
+songs %>% 
+  select(artist,weeks.on.chart)%>%
+  group_by(artist)%>%
+  summarize(totalWeeks = sum(weeks.on.chart))%>%
+  arrange(desc(totalWeeks))%>%
+  top_n(5)
+
+```
+
+
+6) Which artist has featured on the most Billboard charting songs? 
+
+Lil Wayne, who is featured in 42 songs.
+
+```{r}
+features <- songs %>%
+  filter(!is.na(featuring))%>%
+  pull(featuring)
+  
+features <- unlist(str_split(features, pattern =fixed(",")))
+
+features <- unlist(str_split(features,pattern=fixed("&")))
+
+as.data.frame(features)%>%
+  group_by(features)%>%
+  count()%>%
+  arrange(desc(n))%>%
+  head(1)
+  
+
+  
+```
+
+Which artist has collaborated on the most Billboard charting songs?
+
+His Orchestra has collaborated on the most Billboard charting songs.
+
+```{r}
+
+collabs <- songs %>%
+  filter(collaboration) %>%
+  mutate(artist = str_trim(artist))%>%
+  pull(artist)
+
+
+collabs <- unlist(str_split(collabs, pattern =fixed(",")))
+collabs <- unlist(str_split(collabs,pattern=fixed("&")))
+collabs <- unlist(str_split(collabs,pattern=fixed("/")))
+
+as.data.frame(collabs)%>%
+  mutate(collabs = str_trim(collabs))%>%
+  group_by(collabs)%>%
+  count()%>%
+  arrange(desc(n))%>%
+  head(1)
+```

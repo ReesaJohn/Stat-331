@@ -1,0 +1,46 @@
+---
+title: "ICA Day 4"
+author: "Reesa John"
+date: "1/23/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+hiphop <- read.csv("https://www.dropbox.com/s/1qqyshx5ikt9zoc/hiphop.csv?dl=1")
+
+library(tidyverse)
+```
+
+```{r}
+hiphop %>%
+  distinct(ethnic)
+```
+
+
+
+```{r}
+
+final_data <- hiphop %>%
+  filter(ethnic!="black")%>%
+  distinct(subj,.keep_all=TRUE)%>%
+  mutate( 
+    has_black_friends = blackMove>0)%>%
+  group_by(has_black_friends)%>%
+  summarize_at(vars(barkley,bieber,boondocks,jayz,monique), 
+    funs(mean))%>%
+  gather(key=culture_question, value = avg_score,-has_black_friends)
+
+final_data
+```
+```{r}
+final_data %>%
+  ggplot(aes(x=culture_question, y=avg_score, fill = has_black_friends)) +
+  geom_col(position="dodge")+ggtitle("Do non-black people with black friends know more about black culture?")
+```
+
+```
+
