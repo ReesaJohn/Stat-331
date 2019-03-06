@@ -1,0 +1,185 @@
+---
+title: "Lab 7"
+author: "Reesa John"
+date: "March 4, 2019"
+output: html_document
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE)
+```
+
+
+```{r, echo=FALSE,message=FALSE}
+library(tidyverse)
+```
+
+#The data
+**1. Import the data. **
+
+Hints:
+• If you are using read.csv(), you will want to use the option header = TRUE
+• Missing data in this dataset is labeled "Not Provided" or "Not provided" or is blank. You will want to replace these values   with NAs. Use the arguments na.string in read.csv() or na in read_csv.
+
+```{r, message = FALSE}
+path = "C:\\Users\\reesa\\Desktop\\Stat-331\\Course Materials - Student\\Salaries.csv"
+salaries <- read_csv(path,na = c("", "NA","Not Provided", "Not provided"))
+```
+
+2. Our variable of interest for this lab is going to be Total Pay. Plot a histogram of Total Pay with an overlaying density. (Include y = ..density.. in your aesthetic, so that the histogram heights are densities rather than counts.) Comment briefly on the shape, center, and spread.
+
+```{r}
+ggplot(salaries,aes(x = TotalPay))+geom_histogram(mapping = aes(y=..density..), binwidth = 10000)+
+  geom_density(color = "red")
+```
+
+The distribution is skewed to the right, and is almost binodal. The median is most likely between x = $50,000 and $100,000 and the mean probaby around but definitely above $100,000.
+
+3. Suppose we’re interested in making inference about the typical salary (Total Pay) of all San Francisco city employees and this is our representative sample. Is the mean a good statistic to use here to describe the typical value of salary? Why or why not?
+
+Due to how heavily skewed to the right the data is, the mean would be a poor statistic to describe the typical value of salary as most people's incomes would be below the mean. 
+
+4. Recall that one of the conditions of a one-sample t-test for a mean is that the population is normally distributed. Based on yor graph in (1), does this assumption seem reasonable? Why or why not?
+
+Normally distributed populations tend to look symmetric and have a bell curve to them. This population has neither symmetry nor a bell curved distribution.
+
+5. Compute a 95% t-confidence interval for the mean Total Pay.
+
+```{r}
+sf_pay <- salaries %>%
+  filter(!is.na(TotalPay))%>%
+  pull(TotalPay)
+quantile(sf_pay, c(0.025, .975))
+```
+
+#Bootstrapping
+
+6. Use the bootstrap procedure to construct a 95% bootstrap confidence interval for the mean Total Pay.Compare this interval to your t-interval in (3). Be sure to explain any differences you see.
+
+```{r}
+sf_pay_bootstrap <- replicate(1000,sample(sf_pay,replace = TRUE),simplify = FALSE)
+sf_pay_bootstrap <- map_dbl(sf_pay_bootstrap,mean)
+
+quantile(sf_pay_bootstrap, c(0.025, .975))
+```
+
+7. Since the distribution of Total Pay is so skewed, there may be other statistics that are better at
+describing the typical salary. Write your own function for calculating the following two statistics. (You may have to Google what they mean!)
+
+• Midhinge
+
+```{r}
+midhinge_func <- function(data){
+  q1 <- quantile(data,0.25)
+  q3 <- quantile(data,0.75)
+  
+  return ((q1+q3)/2)
+}
+```
+
+• Trimmed Mean (this should take two arguments: the data vector and the percent to trim)
+
+```{r}
+#acts on a sorted list arranged in ascending order
+trimmed_mean_func <- function(data, trim){
+  
+  size = length(data)
+  lower = round(trim*size)
+  upper = size - lower
+  new_data <- data[(lower+1):upper]
+  return (mean(new_data))
+}
+
+```
+
+
+8. Perform the bootstrap procedure and produce graphs of the distributions of:
+
+```{r}
+sf_pay_bootstrap2 <- replicate(1000,sample(sf_pay,replace = TRUE),simplify = FALSE)
+sf_pay_bootstrap2_df <- data.frame(
+  
+  midhinge = map_dbl(sf_pay_bootstrap,midhinge_func),
+  trimmed_mean_5_percent = map_dbl(sf_pay_bootstrap2,trimmed_mean_func,trim = 0.05),
+  trimmed_mean_10_percent = map_dbl(sf_pay_bootstrap2,trimmed_mean_func,trim = 0.10),
+  trimmed_mean_25_percent = map_dbl(sf_pay_bootstrap2,trimmed_mean_func,trim = 0.25),
+  median = map_dbl(sf_pay_bootstrap2,median)
+)
+
+#sorting my variables so my trimmed mean function will work
+sf_pay_bootstrap2_df <- sf_pay_bootstrap2_df %>%
+  mutate(
+    midhinge =sort(midhinge),
+    trimmed_mean_5_percent = sort(trimmed_mean_5_percent),
+    trimmed_mean_10_percent = sort(trimmed_mean_10_percent),
+    trimmed_mean_25_percent = sort(trimmed_mean_25_percent),
+    median = sort(median)
+  )
+```
+
+• Midhinge
+
+```{r}
+sf_pay_bootstrap2_df%>%
+  ggplot(aes(x=midhinge))+geom_histogram(mapping = aes(y=..density..),binwidth = 50)+
+  geom_density(color = "red")+
+  ggtitle("Midhinge")
+```
+
+• 5% Trimmed Mean
+
+```{r}
+sf_pay_bootstrap2_df%>%
+  ggplot(aes(x=trimmed_mean_5_percent))+geom_histogram(mapping = aes(y=..density..),binwidth = 50)+
+  geom_density(color = "red")+
+  ggtitle("5% Trimmed Mean")
+```
+
+• 10% Trimmed Mean
+
+```{r}
+sf_pay_bootstrap2_df%>%
+  ggplot(aes(x=trimmed_mean_10_percent))+geom_histogram(mapping = aes(y=..density..),binwidth = 50)+
+  geom_density(color = "red")+
+  ggtitle("10% Trimmed Mean")
+```
+
+• 25% Trimmed Mean
+
+```{r}
+sf_pay_bootstrap2_df%>%
+  ggplot(aes(x=trimmed_mean_25_percent))+geom_histogram(mapping = aes(y=..density..),binwidth = 50)+
+  geom_density(color = "red")+
+  ggtitle("25% Trimmed Mean")
+```
+
+• Median
+
+```{r}
+sf_pay_bootstrap2_df%>%
+  ggplot(aes(x=median))+geom_histogram(mapping = aes(y=..density..),binwidth = 50)+
+  geom_density(color = "red")+
+  ggtitle("Median")
+```
+
+9. Compute 95% bootstrap confidence intervals for the statistics listed in (7) and compare to your intervals for the mean from above. How do they compare? Which would you use to describe the typical salary and why?
+
+```{r}
+print("Midhinge")
+quantile(sf_pay_bootstrap2_df$midhinge, c(0.025, .975))
+print("5% Trimmed Mean")
+quantile(sf_pay_bootstrap2_df$trimmed_mean_5_percent, c(0.025, .975))
+print("10% Trimmed Mean")
+quantile(sf_pay_bootstrap2_df$trimmed_mean_10_percent, c(0.025, .975))
+print("25% Trimmed Mean")
+quantile(sf_pay_bootstrap2_df$trimmed_mean_25_percent, c(0.025, .975))
+print("Median")
+quantile(sf_pay_bootstrap2_df$median, c(0.025, .975))
+```
+
+I would prefer to use the midhinge in this scenario. The median only reports what is at the 50th percentile exactly. This is fine if the majority of the people make around this much money numerically and a few salaries skew the distribution in a single direction, but after bootstrapping, we have a far more normal population to sample from. As a result taking the median each time from each sample would not reflect the typical salary as well as other methods, since there are more low salaries that deviate significantly from the mean compared to higher values. THis is reflected in the fact that the confidence interval for the median is significantly different from the the other 4.
+
+While bootstrapping and trimming the means helped normalize the distribution, it doesn't change the fact that the data set itself is skewed to the right. If you trim too little, those with high salaries will still be part of the sample, and though it is unlikely to sample them, it is a possibility and they will affect the mean. If you trim too much, you will be taking out a significant chunk of the population relevant for estimating the typical salary. That said, trimmed means with bootstrapping is far better than what we had originally, and I do not think it is inaccurate.
+
+However, I still prefer the midhinge because it is the average of the 25th and 75th percentiles. Taking the average of how the lower end and the higher end of the middle 50% would take into account of extreme values without introducing much bias. 
+
+

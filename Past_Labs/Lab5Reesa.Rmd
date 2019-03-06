@@ -1,0 +1,162 @@
+---
+title: "Lab 5: Baby Names"
+author: "Reesa John"
+date: "February 20, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r, message=FALSE}
+library(tidyverse)
+library(lubridate)
+library(readxl)
+library(modelr)
+```
+
+#Introduction
+
+In this report, I am going to examine the trends in the names Brandon and Jennifer over time. I have chosen to do an analysis on these names as they are the names of two of my close friends.
+
+# The Data
+
+The data used in this report comes from the data set "babies_ca.xlsx" which contains information about baby names in California from 1940-2016.  For each year, and for each name with at least 50 recorded babies born overall, we are given the counts of how many babies had that name of each gender.
+
+```{r}
+mypath = "C:\\Users\\reesa\\Desktop\\Stat-331\\Directories_etc\\Babyname_Datasets\\babies_ca.xlsx"
+babies <-read_excel(mypath)
+
+brandons <- babies %>% 
+  filter(Name == "Brandon")
+
+jennifers <- babies %>%
+  filter(Name == "Jennifer")
+```
+
+Before creating any statistical models, I have first decided to see if there are any male Jennifers or female Brandons. Jennifer is a name commonly associated with girls and Brandon is a name commonly associated with boys. If there are any of the other gender, I would need to take that into consideration.
+
+```{r}
+brandons %>%
+  filter(Gender == "F") %>% head()
+
+jennifers %>%
+  filter(Gender == "M") %>% head()
+
+```
+The results show that there do indeed exist male Jennifers and female Brandons born in California. As such, I have decided to create two linear models, for each name, one for the males, and the other for the females.
+
+# Jennifer
+
+```{r jennifers gender seperated model}
+jennifers_model_2 <- lm(Count ~ Year*Gender, data = jennifers)
+
+summary(jennifers_model_2)
+
+```
+
+Looking at the results for the linear model, we see that the number of female Jennifers in California throughout the years have gone up with time, as the slope is 16.309. For males, the slope is nearly 0, at approximately 0.2. That said, it is still slightly positive. 
+
+```{r jennifer ggplot}
+ggplot(jennifers, aes(x = Year, y = Count, color = Gender)) + geom_point() + stat_smooth(method = "lm")+
+  ggtitle("Jennifer - Linear Model: Year vs. Count")
+
+jennifers_lm <- jennifers %>%
+  add_predictions(jennifers_model_2) %>%
+  mutate(residual = Count - pred)
+
+jennifers_lm %>%
+  ggplot(aes(x = Year, y = residual, color = Gender)) + geom_point()+
+  ggtitle("Jennifer - Residual Plot: Year vs. Count")
+```
+
+Looking at the linear models against the scatterplots for female and male baby Jennifers across time in California, and their respective residual plots, its obvious at once that the linear model is an awful fit for female Jennifer's accross time. 
+
+It increased rapidly in popularity from 1940 to 1970, and remained extremely popular from 1970 to 1983, but post 1983, it experienced a rapid decrease in popularity that continued until the last year of this data set, 2016
+
+And while the linear model is an excellent fit for the male Jennifers, as their residuals are all very close to 0, their counts are very low.
+
+#Brandon
+
+```{r brandons gender seperated mode;}
+brandons_model_2 <- lm(Count ~ Year*Gender, data = brandons)
+
+summary(brandons_model_2)
+
+```
+
+Looking at the results for the linear model, we see that the number of female Brandons in California throughout the years seem pretty static, as the slope is incredibly tiny at 3.039e-03. For males, the slope is significantly greater, around 39.52, which means, according to this linear model, the number of male Brandons across time have increased.
+
+```{r brandons ggplot}
+brandons %>% 
+  ggplot(aes(x = Year, y = Count, color = Gender)) + geom_point() + stat_smooth(method = "lm")+
+  ggtitle("Brandon - Linear Model: Year vs. Count")
+
+brandons_lm <- brandons %>%
+  add_predictions(brandons_model_2) %>%
+  mutate(residual = Count - pred)
+
+brandons_lm %>%
+  ggplot(aes(x = Year, y = residual, color = Gender)) + geom_point()+
+  ggtitle("Brandon - Residual Plot: Year vs. Count")
+```
+
+Much like with the linear models concerning Jennifers born in California across time, looking at the linear models against the scatterplots for male and female baby Brandons across time in California, and their respective residual plots, its obvious at once that the linear model is an awful fit for the male Brandons.
+
+The name was pretty low in popularity until 1970 when it experienced a pretty steady increase until it peaked in 1994 (though there was a dip between 1985 to 1990), and it experienced a pretty steady decrease in popularity since then.
+
+And like male Jennifers, the linear model is an excellent fit for the male Brandons, as their residuals are all very close to 0, but their counts are very low to begin with.
+
+# Jennifers and Brandons: 1999 and Beyond
+
+My friends, Brandon and Jennifer are born in 1999, so I am also curious how their names popularity changed developed after they were born.
+
+```{r 99 models}
+brandons_99 <- brandons %>%
+  filter(Year >=1999)
+
+jennifers_99 <- jennifers %>%
+  filter(Year >= 1999)
+```
+
+```{r jennifer99 stuff}
+jennifers_99_model_2 <- lm(Count ~ Year*Gender, data = jennifers_99)
+
+summary(jennifers_99_model_2)
+
+jennifers_99 %>%
+  ggplot(aes(x = Year, y = Count, color = Gender)) + geom_point() + stat_smooth(method = "lm")+
+  ggtitle("Jennifer Beyond 1999 - Linear Model: Year vs. Count")
+
+jennifers_99_lm <- jennifers_99 %>%
+  add_predictions(jennifers_99_model_2) %>%
+  mutate(residual = Count - pred)
+
+jennifers_99_lm %>%
+  ggplot(aes(x = Year, y = residual, color = Gender)) + geom_point()+
+  ggtitle("Jennifer Beyond 1999 - Residual Plot: Year vs. Count")
+```
+
+In the case of both genders, there is downward slope in popularity for the name Jennifer, though in the case of men, the slope is basically 0. For females, the slope was about -141. The last recorded instance of a male Jennifer is in 2002. For female Jennifer's, while the linear model looks to be a decent fit, there is definitely a pattern in the residual plot, which implies that a linear model is not the best fit for this model.
+
+```{r brandon99 stuff}
+brandons_99_model_2 <- lm(Count ~ Year*Gender, data = brandons_99)
+
+summary(brandons_99_model_2)
+
+brandons_99 %>% 
+  ggplot(aes(x = Year, y = Count, color = Gender)) + geom_point() + stat_smooth(method = "lm")+
+  ggtitle("Brandon Beyond 1999 - Linear Model: Year vs. Count")
+
+brandons_99_lm <- brandons_99 %>%
+  add_predictions(brandons_99_model_2) %>%
+  mutate(residual = Count - pred)
+
+brandons_99_lm %>%
+  ggplot(aes(x = Year, y = residual, color = Gender)) + geom_point()+
+  ggtitle("Brandon Beyond 1999 - Residual Plot: Year vs. Count")
+```
+
+For female Brandons, there is a slight positive slope, though it is practically 0. The last female Brandon was born in 2004. For male Brandons however, there is a clear downward trend, as the slope is about -106. The linear model seems to be a decent fit for both genders of Brandons, but the residual plot has a strange, almost parabolic pattern to it as well, which indicates a linear model is still not the best type of model for this data.
+Important:  Your final html file should look like a report.  There should be no code displayed and no output displayed besides results and plots of interest

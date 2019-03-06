@@ -1,0 +1,10 @@
+name: shinyice
+title:
+username:
+account: rejohn
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 746825
+bundleId: 1905082
+url: https://rejohn.shinyapps.io/shinyice/
+when: 1551318439.8819

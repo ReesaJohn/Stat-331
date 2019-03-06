@@ -1,0 +1,217 @@
+---
+title: "Lab 6"
+author: "Reesa John"
+date: "March 2, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, echo= FALSE, message = FALSE}
+library(tidyverse)
+library(gridExtra)
+```
+
+# Normal Approximation to the Binomial
+
+Recall that the Normal Approximation to the Binomial states that Binomial distributions are approximately Normally distributed, for a large enough number of trials and probability of success that is not close to 0% or 100%.
+
+**1) Generate 1000 samples from a Binomial distribution with 20 trials and a 90% probability of success.**
+
+a) Plot a histogram of these samples.
+b) Plot a density from these samples.
+
+```{r}
+means <- rbinom(n = 1000,size = 20,prob = 0.9)
+bin_1 <- as.data.frame(means)
+
+ggplot(bin_1, aes(x=means))+geom_bar()
+ggplot(bin_1, aes(x=means))+geom_density()
+```
+
+**2) Generate 1000 samples each from a Binomial distribution with**
+
+a) 20 trials, 90% chance of success
+b) 20 trials, 70% chance of success
+c) 20 trials, 50% chance of success
+
+Plot the densities of these results on top of each other in the same plot.
+
+```{r}
+p_success = c(0.9, 0.7, 0.5)
+my_samples <- map_dfc(p_success, ~rbinom(n = 1000, size = 20,prob = .x))
+names(my_samples) <- p_success
+
+my_samples <- my_samples %>%
+gather(key = "Chance_of_Success", value = "Samples")
+ggplot(my_samples, aes(x = Samples, fill = Chance_of_Success)) +
+geom_density(alpha = 0.5)
+
+```
+
+
+**2) Generate 1000 samples each from a Binomial distribution with**
+
+a) 20 trials, 90% chance of success
+b) 50 trials, 90% chance of success
+c) 100 trials, 90% chance of success
+
+Convert these to sample proportions; i.e., if you observe a sample of 15 successes in 20 trials, that should be a sample proportion of 15/20 = 0.75. Plot the densities of the sample proportions on top of each other
+in the same plot.
+
+```{r}
+num_trials = c(20,50,100)
+my_samples <- map_dfc(num_trials, ~rbinom(n = 1000, size = .x, prob = 0.90))
+names(my_samples) <- num_trials
+
+my_samples <- my_samples %>%
+  gather(key = "Number_of_Trials", value = "Samples") %>%
+  mutate(sample_proportions = Samples/as.numeric(Number_of_Trials))
+
+
+ggplot(my_samples, aes(x = sample_proportions, fill = Number_of_Trials)) +
+geom_density(alpha = 0.5)
+```
+
+
+**3) Convert your code for generating and plotting the sample proportions to a function that takes two arguments: trials (a vector) and prob_success (a single value). The function should then plot the densities of the sample proportions for every value of trials that is supplied.**
+
+```{r}
+plot_proportions <- function(trials,prob_success){
+ 
+  my_samples <- map_dfc(trials, ~rbinom(n = 1000, size = .x, prob = prob_success))
+  
+  names(my_samples) <- trials
+
+  my_samples <- my_samples %>%
+    gather(key = "Number_of_Trials", value = "Samples") %>%
+    mutate(sample_proportions = Samples/as.numeric(Number_of_Trials))
+  
+  ggplot(my_samples, aes(x = sample_proportions, fill = Number_of_Trials)) +
+  geom_density(alpha = 0.5)+ggtitle(paste0("Probability of Success is ",prob_success))
+  
+}
+```
+
+
+**4) Use your function and the resulting plots to come up with a “rule” for when the Normal Approximation to the Binomial makes sense.**
+
+```{r}
+vec_trials <- c(30,75,150)
+vec_probs <- c(0.25, 0.5, 0.75)
+
+pp1 <- plot_proportions(vec_trials,0.05)
+pp2 <- plot_proportions(vec_trials,0.15)
+pp3 <- plot_proportions(vec_trials,0.25)
+
+pp4 <- plot_proportions(vec_trials,0.35)
+pp5 <- plot_proportions(vec_trials,0.50)
+pp6 <- plot_proportions(vec_trials,0.65)
+
+pp7 <- plot_proportions(vec_trials,0.75)
+pp8 <- plot_proportions(vec_trials,0.85)
+pp9 <- plot_proportions(vec_trials,0.95)
+
+grid.arrange(pp1, pp2, pp3, pp4,ncol = 2, nrow = 2)
+pp5
+grid.arrange(pp6, pp7, pp8, pp9, ncol = 2, nrow = 2)
+
+```
+
+For the most part, it looks like the density plot approaches normal with a greater number of trials, as well as when the probability of success approaches 0.5 from either 0 or 1.
+
+#The Central Limit Theorem
+
+Recall that the Central Limit Theorem tells us about the distribution of the sample mean, which is called the sampling distribution. As sample size becomes large, the sampling distribution approaches a normal distribution, and the standard deviation of the sampling distribution decreases. The mean of the sampling distribution is equal to the population mean. Not all statistics have such nice theory and machinery to take advantage of! In the following exercise, you will explore the sampling distributions of a few different statistics: mean, median, standard deviation, range, and third quartile. (Note that the function range() in R does not compute the range as we intend it here.)
+
+**1. Suppose our population is Normal with mean 50 and standard deviation 10.**
+
+a) Simulate 1000 samples of size 30 from this population. For each sample, compute the mean, median,
+standard deviation, range, and third quartile. Store these in together in a data frame. 
+
+```{r}
+my_samples <- replicate(1000, rnorm(n =30, mean = 50, sd =10), simplify = FALSE)
+my_stats <- data.frame(
+  means = map_dbl(my_samples,mean),
+  medians = map_dbl(my_samples,median),
+  sds =  map_dbl(my_samples,sd),
+  max =  map_dbl(my_samples,max),
+  min = map_dbl(my_samples, min),
+  third_quartile = map_dbl(my_samples,quantile, prob =0.75)
+)
+
+my_stats <- my_stats %>%
+  mutate(range = max-min)%>%
+  select(-max,-min)
+```
+
+b) Plot the sampling distribution (histogram) of the means.
+
+```{r}
+my_stats %>%
+  ggplot(aes(x=means))+
+  geom_histogram(binwidth = 0.5)
+
+```
+
+c) Plot the sampling distributions of the other four statistics in (four separate graphs) of a single plotting window. Be sure to label things appropriately.
+
+```{r}
+p1 <- ggplot(my_stats,aes(x=medians))+
+  geom_histogram(binwidth = 0.5)+ggtitle("Medians")
+
+p2 <- ggplot(my_stats,aes(x=sds))+
+  geom_histogram(binwidth = 0.5)+ggtitle("Standard Deviations")
+
+p3 <- ggplot(my_stats,aes(x=third_quartile))+
+  geom_histogram(binwidth = 0.5)+ggtitle("3rd Quartiles")
+
+p4 <- ggplot(my_stats,aes(x=range))+
+  geom_histogram(binwidth = 1)+ggtitle("Ranges")
+
+grid.arrange(p1, p2, p3, p4, ncol = 2, nrow = 2)
+
+```
+
+**2) Repeat (a)-(c) for a Uniform distribution with minimum of 10 and maximum of 90.**
+
+```{r}
+my_samples <- replicate(1000, runif(n = 30, min = 10, max = 90), simplify = FALSE)
+my_stats <- data.frame(
+  means = map_dbl(my_samples,mean),
+  medians = map_dbl(my_samples,median),
+  sds =  map_dbl(my_samples,sd),
+  max =  map_dbl(my_samples,max),
+  min = map_dbl(my_samples, min),
+  third_quartile = map_dbl(my_samples,quantile, prob =0.75)
+)
+
+my_stats <- my_stats %>%
+  mutate(range = max-min)%>%
+  select(-max,-min)
+
+my_stats %>%
+  ggplot(aes(x=means))+
+  geom_histogram(binwidth = 1)
+
+p1 <- ggplot(my_stats,aes(x=medians))+
+  geom_histogram(binwidth = 1)+ggtitle("Medians")
+
+p2 <- ggplot(my_stats,aes(x=sds))+
+  geom_histogram(binwidth = 1)+ggtitle("Standard Deviations")
+
+p3 <- ggplot(my_stats,aes(x=third_quartile))+
+  geom_histogram(binwidth = 1)+ggtitle("3rd Quartiles")
+
+p4 <- ggplot(my_stats,aes(x=range))+
+  geom_histogram(binwidth = 1)+ggtitle("Ranges")
+
+grid.arrange(p1, p2, p3, p4, ncol = 2, nrow = 2)
+```
+
+
+**3) Based on the above, do you think that the Central Limit Theorem applies to any of the other statistics besides the mean? Justify your answer.**
+
+For medians and standard deviations, it seems that the Central Limit Theorem applies as the graphs look somewhat normal as they possess a similar look to the mean which we know is normally distributed. 3rd quartiles also look like it could potentially be normally distributed, but it seems to be a little more biased towards the larger end of the range of values for our uniform distribution. In the case of range, it is very obviously skewed left in both the normal and uniform distributions, so we cannot say the Central Limit Theorem applies to ranges.

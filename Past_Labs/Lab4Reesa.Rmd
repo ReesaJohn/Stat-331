@@ -1,0 +1,167 @@
+---
+title: "Lab4Reesa"
+author: "Reesa John"
+date: "February 16, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(tidyverse)
+library(broom)
+library(ggplot2)
+pokes <- read.csv("https://www.dropbox.com/s/i0lwxgv86eaoq4o/pokemon.csv?dl=1",na.strings = "")
+
+pokes <-pokes %>%
+  mutate(Generation = as.factor(Generation))
+```
+
+What makes a pokemon a good fighter? From playing pokemon, ignoring using pokemon as support, I would say it should have either a great offense or defense. However, there are a few who tend to excel in all fields.
+
+I have decided to explore which pokemon tend to have the best offense, defense, and overall stats. I will gather the top ten in each category.
+
+I already know from experience that a pokemon's number, height, and weight are irrevelant. Catch rate is important to know the feasibility of acquiring pokemon, but for the sake of having a condensed report, I will ignore that as well.
+
+In addition to finding the top ten in offense, defense, and overall stats, I will see if there is a type that tends to do better in any of these three categories.
+
+To start, I decided to get an overview of the data using str() and summary().
+
+```{r}
+str(pokes)
+```
+
+```{r}
+summary(pokes)
+```
+
+In general, if a pokemon is better offensively, they tend to have great Attack, Special Attack, and Speed, and if they are better defensively, they tend to have great Defense, Special Defense, and HP. So in order to figure out which pokemon are better in each category, I need to create two variables Atk_Score and Def_Score which give more weight to certain fighting qualities over the other depending on what I'm measuring for. 
+
+I also need to know if there is a relationship between Attack and Special Attack, as well as Defense and Special Defense to properly weight these in their own categories. I made two new variables, diff_atks(the difference between Attack and Special Attack) and dif_defs(the difference between Defense and Special Defense) and conducted a linear regression t-test on Attack vs diff_atks and Defense vs diff_defs. 
+
+If it had a positive slope, that means the higher in value attack or defense is, the lower in value their special counterparts would be compared to their attack or defense and vice versa. Looking at the results of the linear regressions, both slopes are positive, and their p-values are well under 0.01, which means the results are not by chance, so it would be reasonable to assume that a higher attack or defense results in lower values for their special counterparts.
+
+```{r}
+lm_pokes <-pokes %>%
+  mutate(diff_atks = (Attack-Sp_Atk),
+         diff_defs = (Defense-Sp_Def))
+
+tidy(lm( Attack ~ diff_atks, data = lm_pokes))
+tidy(lm(Defense ~ diff_defs, data = lm_pokes))
+
+lm_pokes %>% ggplot(aes(x=Attack,y=diff_atks))+geom_point(color = "darkturquoise")+
+  geom_smooth(method = lm, color = "red", alpha = 0)+
+  ylab("Attack - Special Attack")+ theme(
+  panel.background = element_rect(fill = "white",
+                                colour = "turquoise4",
+                                size = 0.5, linetype = "solid"),
+  panel.grid.major = element_line(size = 0.5, linetype = 'solid',
+                                colour = "turquoise4"), 
+  panel.grid.minor = element_line(size = 0.25, linetype = 'solid',
+                                colour = "turquoise4") )+
+  ggtitle("Attack - Special Attack vs Attack")
+  
+lm_pokes %>% ggplot(aes(x=Defense,y=diff_defs))+geom_point(color = "darkturquoise")+
+  geom_smooth(method = lm, color = "red", alpha = 0)+
+  ylab("Defense - Special Defense")+ theme(
+  panel.background = element_rect(fill = "white",
+                                colour = "turquoise4",
+                                size = 0.5, linetype = "solid"),
+  panel.grid.major = element_line(size = 0.5, linetype = 'solid',
+                                colour = "turquoise4"), 
+  panel.grid.minor = element_line(size = 0.25, linetype = 'solid',
+                                colour = "turquoise4") )+
+  ggtitle("Defense - Special Defense vs Defense")
+
+
+```
+
+Now to create Atk_Score, and Def_Score, I have come up with two formulas:
+
+Atk_Score = 2*(Max(Attack,Sp_Atk))+Speed)+1.25(Min(Attack,Sp_Atk))+0.75(sum(HP,Defense,Sp_Def))
+Def_Score = 2*(Defense+Sp_Def+HP)+(sum(Speed,Attack,Sp_Atk))
+
+```{r}
+pokes <- pokes %>% mutate(
+    Atk_Score = (0.75*(HP+ Defense+Sp_Def))+(1.5*pmin(Sp_Atk,Attack))+(2*(pmax(Sp_Atk,Attack)+Speed)),
+    Def_Score = (0.75*(Speed+pmin(Sp_Atk,Attack)))+(1.25*pmax(Sp_Atk,Attack))+(2*(Sp_Def+Defense+HP))
+    )
+```
+
+In the case of attack, you can choose more special or non-special moves to give to you pokemon depending on which type of attack it is more proficient in, so I made a point to give more weight to the higher one. I also put less weight on HP, Defense, and Sp_Def because if you are going for a pokemon that prioritizes attacking, you ideally want it to defeat your opponent before it can hit you.
+
+I have chosen to give the same weight to both Defense and Special Defense despite the results, since it's more important to defend from all sorts of attacks. I also decided to give more weight to the better of its two attacks and less weight to the rest of its stats as it does need to ultimately defeat its opponent, but doesn't need to be exceptionally strong to do that.
+
+I have also used the variable total as my measurement for overall stats, as it is the aggregate of all fighting qualities.
+
+```{r}
+pokes %>%
+  select(Name, Total, HP, Attack, Defense, Sp_Atk, Sp_Def, Speed, Atk_Score)%>%
+  top_n(n=10, wt=Atk_Score)%>%
+  arrange(desc(Atk_Score))
+
+pokes %>%
+  select(Name, Total, HP, Attack, Defense, Sp_Atk, Sp_Def, Speed, Def_Score)%>%
+  top_n(n=10, wt=Def_Score)%>%
+  arrange(desc(Def_Score))
+
+pokes %>%
+  select(Name, Total, HP, Attack, Defense, Sp_Atk, Sp_Def, Speed)%>%
+  top_n(n=10, wt=Total)%>%
+  arrange(desc(Total))
+```
+
+Unsurprisingly there is a fair amount of overlap between the three top tens, with Arceus reigning supreme in both defense and overall, and Mewtwo ranking the best offensively.
+
+
+
+Now I am going to see if pokemon tend to be stronger in either offense, defense, or overall stats if they are of a certain type. To simplify things, I have decided condense Type_1 and Type_2 to a single column, and eliminate any rows in that have NA in type.
+
+```{r}
+pokes1 <- pokes %>%
+  select(-Type_2)%>%
+  rename(Type = Type_1)
+
+pokes2 <- pokes %>%
+  select(-Type_1)%>%
+  rename(Type = Type_2)
+
+ggpokes <- rbind(pokes1, pokes2)%>% 
+  arrange(Number)%>%
+  filter(!is.na(Type))
+```
+
+Dragon is the winner in all three categories, but steel types is not a bad choice either, as it is in the top three for offense, defense, and overall. Fire tends to be better offensively, but a bit weaker on the defensive side, and Rock tends to do better defensively, but is fairly weak when it comes to offense. However, all three graphs agree, Bug is worst type overall.
+
+```{r}
+ggpokes <- ggpokes %>% 
+  group_by(Type) %>%
+  summarize(Avg_Offense = mean(Atk_Score),
+            Avg_Defense = mean(Def_Score),
+            Avg_Total = mean(Total))
+
+ggpokes %>%
+  mutate( Type = fct_reorder(Type, Avg_Offense)) %>% 
+  ggplot(aes(x=Type ,y= Avg_Offense, fill = Type))+geom_col() + coord_flip()+ggtitle("Offensive") +
+  ylab("Average Offense")
+
+ggpokes %>%
+  mutate( Type = fct_reorder(Type, Avg_Defense)) %>% 
+  ggplot(aes(x=Type ,y= Avg_Defense, fill = Type))+geom_col() + coord_flip()+ggtitle("Defensive")+
+    ylab("Average Defense")
+
+ggpokes %>%
+  mutate( Type = fct_reorder(Type, Avg_Total)) %>% 
+  ggplot(aes(x=Type ,y= Avg_Total, fill = Type))+geom_col() + coord_flip()+ggtitle("Overall")+
+    ylab("Average Overall")
+
+```
+
+
+
+
+
+
