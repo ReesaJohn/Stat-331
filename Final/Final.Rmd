@@ -1,0 +1,246 @@
+---
+title: "Final Exam"
+author: "Reesa John"
+date: "March 19, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+###Setup
+
+```{r, message = FALSE}
+library(tidyverse)
+library(stringr)
+library(modelr)
+
+```
+
+```{r, message = FALSE}
+mypath = "C:\\Users\\reesa\\Desktop\\Stat-331\\Final\\cereal.csv"
+cereals <-read_csv(mypath)
+```
+
+###Part One
+
+This dataset includes a variable called cups which gives the number of cups in a "single serving" of cereal.
+It also includes a variable called weight which gives the weight in ounces of a single serving. 
+
+Several variables in this dataset measure the amount of a certain substance in a single serving: calories, protein, fat, sodium, fiber, carbo, sugars, and potass. If these substances are measured with different serving sizes, it is impossible to compare cereals to each other.
+
+1. Create a function called adjust_cereal to fix this problem. It should take as an input:
+
+* The measurement for any substance (in grams)
+* The number of cups in one serving
+* The weight in ounces of one serving
+* A string specifying "volume" or "weight"
+
+
+```{r}
+
+adjust_cereal <- function(grams,cups,weight, div){
+  
+  if(div == "volume"){
+    return(adjusted <- grams/cups )
+  }
+  else if(div == "weight"){
+    return(grams/weight)
+  }
+  else(
+    return("Error")
+  )
+}
+
+```
+
+```{r}
+#test
+adjust_cereal(100,0.75,1.3,"weight")
+```
+
+2. Use your function to update the dataset such that the 8 variables listed above are adjusted for the number of cups in a serving(by volume)
+
+```{r}
+cereals <- cereals %>%
+  mutate(calories = adjust_cereal(calories,cups,weight,"volume"),
+         protein = adjust_cereal(protein,cups,weight,"volume"),
+         fat = adjust_cereal(fat,cups,weight,"volume"),
+         sodium = adjust_cereal(sodium,cups,weight,"volume"),
+         fiber = adjust_cereal(fiber,cups,weight,"volume"),
+         carbo = adjust_cereal(carbo,cups,weight,"volume"),
+         sugars = adjust_cereal(sugars,cups,weight,"volume"),
+         potass = adjust_cereal(potass,cups,weight,"volume"),
+         )
+```
+
+
+###Part 2
+
+####Eat your Wheaties!
+
+a. Make a new variable called Seed_Type. This variable should have the possible values wheat, oat, bran, and unknown, depending on if the words wheat, oat, or bran appear in the name of the cereal. 
+
+Special cases: "Wheat 'n' Bran" should count as wheat; "Oat Bran" should count as oat.
+
+```{r}
+#function to convert to Seed_Type
+find_type <- function(string){
+  pattern = "wheat|oat|bran"
+  string <- tolower(string)
+  match <- str_match(string,pattern)
+  
+  return(match)
+}
+```
+
+```{r}
+cereals <- cereals %>%
+  mutate(Seed_Type = find_type(name))
+
+cereals$Seed_Type[is.na(cereals$Seed_Type)] = "unknown"
+```
+
+b. Suppose you are hired by a wheat farming group to convince the world that wheat cereals are better in some way. Make a convincing plot for the superiority of wheat based cereal. Provide a one-sentence conclusion from your plot.
+
+```{r}
+cereals%>%
+  group_by(Seed_Type)%>%
+  ggplot(aes(x = Seed_Type, y = sugars, fill = Seed_Type))+geom_boxplot()+ggtitle("Sugar Distribution Across Cereal Seed Types")
+```
+
+As you can see from the boxplot, wheat cereals tend to have the lowest sugar content of all types of cereal, as its mean and and the upper limit of its IQR is well below the next lowest mean of sugar content in cereals, which is that of unknown seed types.
+
+c. Suppose you are hired by a oat farming group to convince the world that oat cereals are better in some way. Make a convincing plot for the superiority of wheat based cereal. Provide a one-sentence conclusion from your plot.
+
+calories, protein, fat, sodium, fiber, carbo, sugars, and potass.
+```{r}
+cereals%>%
+  group_by(Seed_Type)%>%
+  ggplot(aes(x = Seed_Type, y = carbo, fill = Seed_Type))+geom_boxplot()+ggtitle("Carb Distribution Across Cereal Seed Types")
+```
+
+Carbs are necessary for energy, and looking at this box plot, it is clear that on average, oats have more carbs than any other seed type.
+
+####Momma Bodwin's Rules
+
+a. Given the rule that you are only allowed to eat cereal with less than six grams of sugar per cup, how many cereals would you be allowed to eat in this dataset?
+
+26 types of cereal.
+```{r}
+cereals %>% 
+  filter(sugars < 6) %>%
+  nrow()
+```
+
+b. Compare how healthy Raisin Bran is to Lucky Charms using plots between fat, calories, sodium, and sugars.
+
+```{r}
+cereals %>%
+  filter(name == "Raisin Bran" | name=="Lucky Charms") %>%
+  select(name,calories, fat, sodium, sugars)%>%
+  gather(type,value,2:5)%>%
+  group_by(name)%>%
+  ggplot(aes(x=name,y = value, fill = name))+geom_col()+facet_wrap(~type, scales = "free")
+
+```
+
+###Part Three
+
+####1. Isn't it sweet?
+
+Is there a relationship between the sugar content of cereal and the rating it is given by Consumer Reports? Use both a plot and a linear model.
+
+```{r}
+cereal_model <- lm(rating ~ sugars, data = cereals)
+summary(cereal_model)
+```
+
+There definitely seems to be a negative association between sugar content in cereals vs ratings, seeing as the linear model has generate a slope of -1.3616. However the adjusted R-squared is only 0.3277, so only 32.77% of the results can be explained by the linear model.
+
+```{r}
+cereals %>%
+  ggplot(aes(x = sugars, y = rating)) +geom_point() + stat_smooth(method = "lm")+
+  ggtitle("Linear Model: Ratings vs. Sugar Content")
+
+cereals %>% 
+  add_predictions(cereal_model)%>%
+  mutate(residual = rating - pred)%>%
+  ggplot(aes(x = sugars, y = residual)) + geom_point()+
+  ggtitle("Residual Plot: Ratings vs. Sugar Content")
+
+```
+
+Looking at the graphs we see for the most part there tends to be a downward trend in ratings with an increase in sugar content, but looking at the resiudal plot, especially for the very sugary cereals,
+the higher the sugar content (>15), the greater the tendency to deviate above the linear plot, so there is a negative relationship, but it is less significant the more sugary the cereal.
+
+#### 2. Kellog versus General Mills 
+
+The two major manufacturers of cereal in the US are Kellog and General Mills, which appear as G and K in out dataset. We will consider the cereals in this dataset to be a random sample of the cereals offered by these two manufacturers.
+
+```{r}
+kellog <- cereals %>%
+  filter(mfr == "K")%>%
+  pull(rating)
+
+gm <- cereals %>%
+  filter(mfr == "G")%>%
+  pull(rating)
+```
+
+
+a. Which of the two manufacturers tends to get higher ratings on average from the Consumer Reports for their cereal? Support your answer with a test. Include one sentence that justifies the use of this test and 1-2 sentences interpreting the results.
+
+```{r}
+t.test(kellog,gm, "greater")
+```
+
+I am using a two sample t-test since it can be used to find if the population mean of one group is greater than or less than that of the other. 
+
+In this case the null hypothesis is that there is no difference between the population means of the ratings of Kellog and General Mills. The alternative hypothesis is if Kellog's population mean if the ratings is greater than that of General Mills.  In this case since our p-value is 0.005496 which is smaller than even an alpha 0.01, we can say with 99% confidence that the average rating for Kellog is greater than that of General Mills.
+
+b. Define a "good cereal to be one with a rating that is greater than 50". Which of these two manufacturers had a higher percentage of good cereals in this dataset?
+
+```{r}
+print("Kellog")
+length(kellog[kellog>50])/length(kellog)
+print("General Mills")
+length(gm[gm>50])/length(gm)
+```
+Kellog had a higher percentage of good cereals at 26% whereas General Mills had only 9%. 
+
+c. Perform a bootstrap procedure with 1000 resamplings from each manufacturer. For each of these 1000 bootstraps, count how many good were sampled from each of the Kellog and General Mills.
+
+```{r}
+gt50 <- function(list){
+  
+  length(list[list>50])
+}
+
+kellog_bootstrap <- replicate(1000,sample(kellog,replace = TRUE),simplify = FALSE)
+kellog_bootstrap_count <- map_dbl(kellog_bootstrap,gt50)
+
+gm_bootstrap <- replicate(1000,sample(gm,replace = TRUE),simplify = FALSE)
+gm_bootstrap_count <- map_dbl(gm_bootstrap,gt50)
+```
+
+d. Use map apply to find the number of times in the bootstrapped samples Kellog had more good cereals than General Mills. 
+
+Give a 1-2 sentence statement using your results to answer this question: Is the difference you saw in b statistically significant?
+
+```{r,}
+kellog_gm_df <- as.data.frame(cbind(kellog_bootstrap_count,gm_bootstrap_count)) 
+
+kellog_gm_df %>%
+  mutate(
+    kellog_greater = case_when(kellog_bootstrap_count>gm_bootstrap_count ~ TRUE, 
+                               TRUE ~ FALSE
+    ))%>%
+  filter(kellog_greater == TRUE)%>%
+  nrow()
+
+```
+
+Seeing as out of 1000 resamples, Kellog has more good samples 917 times, the difference we saw in b is statistically significant since it is representative of what happens generally (Kellog has more good cereals compared to General Mills)

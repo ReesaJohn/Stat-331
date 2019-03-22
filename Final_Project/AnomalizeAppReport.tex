@@ -1,0 +1,159 @@
+\documentclass[]{article}
+\usepackage{lmodern}
+\usepackage{amssymb,amsmath}
+\usepackage{ifxetex,ifluatex}
+\usepackage{fixltx2e} % provides \textsubscript
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+\else % if luatex or xelatex
+  \ifxetex
+    \usepackage{mathspec}
+  \else
+    \usepackage{fontspec}
+  \fi
+  \defaultfontfeatures{Ligatures=TeX,Scale=MatchLowercase}
+\fi
+% use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+% use microtype if available
+\IfFileExists{microtype.sty}{%
+\usepackage{microtype}
+\UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\usepackage[margin=1in]{geometry}
+\usepackage{hyperref}
+\hypersetup{unicode=true,
+            pdftitle={AnomalizeApp Instructions},
+            pdfborder={0 0 0},
+            breaklinks=true}
+\urlstyle{same}  % don't use monospace font for urls
+\usepackage{graphicx,grffile}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+\IfFileExists{parskip.sty}{%
+\usepackage{parskip}
+}{% else
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt plus 2pt minus 1pt}
+}
+\setlength{\emergencystretch}{3em}  % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{0}
+% Redefines (sub)paragraphs to behave more like sections
+\ifx\paragraph\undefined\else
+\let\oldparagraph\paragraph
+\renewcommand{\paragraph}[1]{\oldparagraph{#1}\mbox{}}
+\fi
+\ifx\subparagraph\undefined\else
+\let\oldsubparagraph\subparagraph
+\renewcommand{\subparagraph}[1]{\oldsubparagraph{#1}\mbox{}}
+\fi
+
+%%% Use protect on footnotes to avoid problems with footnotes in titles
+\let\rmarkdownfootnote\footnote%
+\def\footnote{\protect\rmarkdownfootnote}
+
+%%% Change title format to be more compact
+\usepackage{titling}
+
+% Create subtitle command for use in maketitle
+\newcommand{\subtitle}[1]{
+  \posttitle{
+    \begin{center}\large#1\end{center}
+    }
+}
+
+\setlength{\droptitle}{-2em}
+
+  \title{AnomalizeApp Instructions}
+    \pretitle{\vspace{\droptitle}\centering\huge}
+  \posttitle{\par}
+    \author{}
+    \preauthor{}\postauthor{}
+    \date{}
+    \predate{}\postdate{}
+  
+
+\begin{document}
+\maketitle
+
+\subparagraph{Introduction}\label{introduction}
+
+This document will explain how to use the AnomalizeApp located at
+\url{https://rejohn.shinyapps.io/AnomalizeApp/}.
+
+\subparagraph{About the Data}\label{about-the-data}
+
+The app uses data from the \texttt{tibbletime} package
+called\texttt{FANG}, an acronym created from the stock names for the
+companies Facebook, Amazon, Netflix, and Google.
+
+\subparagraph{Purpose}\label{purpose}
+
+The primary purpose of the \texttt{anomalize} package is to detect
+anomalies in time series data. In this application, I will demonstrate
+how the \texttt{anomalize} package helps to detect anomalies in stock
+data.
+
+\subparagraph{Time Series Data Panel}\label{time-series-data-panel}
+
+You can control what data you wish to detect anomalies in: * The first
+drop down menu, ``Stocks'', you can pick which company's stocks you want
+to detect anomalies in. * The second drop down menu, ``Detect Anomalies
+in:'' allows you to control what type of stock data you want to detect
+anomalies in.
+
+\subparagraph{Decomposition Tab}\label{decomposition-tab}
+
+In the decomposition tab, you can control the \texttt{method} parameter
+for the \texttt{time\_decompose()} function to change how the function
+decomposes the time series data in the ``Decomposition Method'' drop
+down menu.
+
+\subparagraph{Anomaly Detection}\label{anomaly-detection}
+
+In the anomaly detection tab, you can control three parameters for the
+\texttt{anomalize()} function: * \texttt{method}: Controls which method
+to use to detect anomalies in the decomposed time series data with the
+``Anomaly Detection Methods'' drop down menu. * \texttt{alpha}: Controls
+the range of what is considered a ``normal'' value which the ``Alpha''
+slider. The larger the value, the more easier it is for a data point to
+be considered an anomaly. * \texttt{max\_anoms}: Controls the maximum
+amount of the data that can be considered an anomaly with the ``Maximum
+Percentage of Anomalies Allowed'' slider (uses decimal values).
+
+\subparagraph{General Plot Aesthetics}\label{general-plot-aesthetics}
+
+In the General Plot Aesthetics tab, you can control four parameters for
+the \texttt{plot\_anomalies()} and
+\texttt{plot\_anomaly\_decomposition()} functions to control the
+appearance of the graphs displayed in the ``Anomaly Plot'' and
+``Decomposition Plot'' tabs: \emph{\texttt{color\_no}: Controls the
+color of ``normal'' points on the graph with the ``Dot Color'' color
+picker. }\texttt{color\_yes}: Controls the color of anomalies on the
+graph with the ``Anomaly Color'' color picker.
+\emph{\texttt{alpha\_dots}: Controls the transparency of the points on
+the graph with the ``Dot Alpha'' slider. }\texttt{size\_dots}: Controls
+the size of the points on the graph with the ``Dot Size'' slider.
+
+\subparagraph{Plot-Specific Aesthetics}\label{plot-specific-aesthetics}
+
+In the Plot-Specific Aesthetics tab, you can control a parameter
+specific to \texttt{plot\_anomalies()} and a parameter specifc to
+\texttt{plot\_anomaly\_decomposition()}: \emph{\texttt{fill\_ribbon}: A
+parameter in \texttt{plot\_anomalies()}. Controls the color of the band
+of ``normal'' values in the Anomaly Plot with the ``Band Color'' color
+picker. }\texttt{strip.position}: A parameter in
+\texttt{plot\_anomaly\_decomposition()}. Controls where the label is in
+the Decomposition Plot with the ``Label Position'' drop down menu.
+
+
+\end{document}

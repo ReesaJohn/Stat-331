@@ -1,0 +1,57 @@
+---
+title: "AnomalizeApp Instructions"
+output:
+  html_document:
+    df_print: paged
+  html_notebook: default
+  pdf_document: default
+---
+##### Introduction
+
+This document will explain how to use the AnomalizeApp located at https://rejohn.shinyapps.io/AnomalizeApp/.
+
+#####About the Data
+
+The app uses data from the `tibbletime` package called`FANG`, an acronym created from the stock names for the companies Facebook, Amazon, Netflix, and Google.
+
+#####Purpose
+
+The primary purpose of the `anomalize` package is to detect anomalies in time series data. In this application, I will demonstrate how the `anomalize` package helps to detect anomalies in stock data.
+
+#####Time Series Data Panel
+
+You can control what data you wish to detect anomalies in: 
+
+  * The first drop down menu, "Stocks", you can pick which company's stocks you want to detect anomalies in.
+  * The second drop down menu, "Detect Anomalies in:" allows you to control what type of stock data you want
+    to detect anomalies in.
+    
+#####Decomposition Tab
+
+In the decomposition tab, you can control the `method` parameter for the `time_decompose()` function to change how the function decomposes the time series data in the "Decomposition Method" drop down menu.
+
+#####Anomaly Detection Tab
+
+In the anomaly detection tab, you can control three parameters for the `anomalize()` function:
+
+  * `method`: Controls which method to use to detect anomalies in the decomposed time series data with the 
+     "Anomaly Detection Methods" drop down menu.
+  * `alpha`: Controls the range of what is considered a "normal" value which the "Alpha" slider. The larger      the value, the more easier it is for a data point to be considered an anomaly.
+  * `max_anoms`: Controls the maximum amount of the data that can be considered an anomaly with the
+     "Maximum Percentage of Anomalies Allowed" slider (uses decimal values).
+     
+#####General Plot Aesthetics Tab
+
+In the General Plot Aesthetics tab, you can control four parameters for the `plot_anomalies()` and `plot_anomaly_decomposition()` functions to control the appearance of the graphs displayed in the "Anomaly Plot" and "Decomposition Plot" tabs:
+
+  * `color_no`: Controls the color of "normal" points on the graph with the "Dot Color" color picker.
+  * `color_yes`: Controls the color of anomalies on the graph with the "Anomaly Color" color picker.
+  * `alpha_dots`: Controls the transparency of the points on the graph with the "Dot Alpha" slider.
+  * `size_dots`: Controls the size of the points on the graph with the "Dot Size" slider.
+
+#####Plot-Specific Aesthetics Tab
+
+In the Plot-Specific Aesthetics tab, you can control a parameter specific to `plot_anomalies()` and a parameter specifc to `plot_anomaly_decomposition()`:
+
+  * `fill_ribbon`: A parameter in `plot_anomalies()`. Controls the color of the band of "normal" values in       the Anomaly Plot with the "Band Color" color picker.
+  * `strip.position`: A parameter in `plot_anomaly_decomposition()`. Controls where the label is in the          Decomposition Plot with the "Label Position" drop down menu.

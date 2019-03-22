@@ -1,0 +1,12 @@
+name: AnomalizeApp
+title: AnomalizeApp
+username:
+account: rejohn
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 804194
+bundleId: 1957633
+url: https://rejohn.shinyapps.io/AnomalizeApp/
+when: 1553244072.77154
+asMultiple: FALSE
+asStatic: FALSE

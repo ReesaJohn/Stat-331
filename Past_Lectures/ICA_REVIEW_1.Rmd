@@ -1,0 +1,64 @@
+---
+title: "icareview1"
+author: "Reesa John"
+date: "March 11, 2019"
+output: html_document
+---
+
+You will want to think about how your code should handle numbers that are negative/zero, and
+numbers that are larger than 26.
+
+There is a pre-loaded vector called letters that contains a-z.
+If your function is successful, the code below should return a real word.
+caesar("sfzqlov", -23)
+```{r}
+library(tidyverse)
+```
+
+97-122 a-z
+```{r}
+caesar<- function(string, shift){
+  shift <- shift %% 26
+  stringNum <- utf8ToInt(string)
+  for(i in seq_along(stringNum)){
+    
+    stringNum[i] = stringNum[i]+shift
+    
+    if(stringNum[i]>122){
+      stringNum[i] = stringNum[i]-26  
+    }
+    else if(stringNum[i]<97){
+      stringNum[i] = stringNum[i]+26
+    }
+
+  }
+  intToUtf8(stringNum)
+  
+}
+
+caesar("sfzqlov", -23)
+```
+
+```{r}
+message <- read.csv("https://www.dropbox.com/s/ctplwmkvey4yo0e/cs_encrypted.txt?dl=1",stringsAsFactors = FALSE, header = TRUE)$x
+```
+
+Task Two: Decode a message
+The encrypted message can be loaded using the code below. This message has been encrypted via the Caesar
+cipher, with an unknown shift.
+```{r}
+for(i in 1:26){
+  print(paste(caesar(message[1],i),i))
+}
+
+```
+shift is 9
+
+2. Use map or similar to decode the full message.
+
+```{r}
+temp <- map(message,caesar,shift = 9)
+paste(temp,collapse = " ")
+```
+
+3. On Polylearn, submit the name of the historical figure who gave the speech in the message

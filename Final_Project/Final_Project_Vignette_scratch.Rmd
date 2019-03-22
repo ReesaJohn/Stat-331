@@ -1,0 +1,254 @@
+---
+title: "Introduction to anomalize"
+author: "Reesa John"
+date: "March 13, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, echo = FALSE, message=FALSE}
+library(tidyverse)
+library(lubridate)
+library(anomalize)
+library(tibbletime)
+
+```
+
+The `anomalize` package is an extremely useful package for anomaly detection, particularly for time series analysis. It has a lot of functionality and is also compatible with the tidyverse.
+
+Without further ado, let's get started!
+
+
+###Preparing Data
+
+Almost, if not all the functions in `anomalize` that have the data argument will take either a tibble or a tibbletime object (which you can create with the package `tibbletime`) as the data argument and most will return a tibbletime object. If you give it a tibble, they will usually convert it a tibbletime object using the column containing your dates as the index column.
+
+I have chosen the data set, `FANG`, which is a tibble of the stock prices for Facebook, Amazon, Netflix and Google from 2013-2016. 
+
+Before you use your tibble in any of the functions in `anomalize`, it is a good idea to convert your index column to a POSIXct.Date object to avoid complications with `anomalize`'s dependencies.
+
+`anomalize` also expects that your index column is in ascending order, so it is very important to make sure your your dates are in ascending order.
+
+```{r}
+
+data(FANG)
+groups <- c("GOOG","FB", "AMZN","GOOG")
+groupFANG <- FANG %>%
+    filter(symbol == groups[1])%>%
+       arrange(date)
+
+
+
+  
+```
+
+
+##Functions
+
+Since the purpose of `anomalize` package is to find anomalies in a time series. However data through time tends to drift through time in a certain direction (trend component), and vary with periods of time (seasonal component). Since we don't want normal fluctuations to interfere with our anomaly detection, we use `time_decompose()` to perform a decomposition of the given time series data.
+
+###Time Decomposition
+
+`time_decompose()` takes a minimum of two arguments:
+  * data: the tibble or tibbletime object you are giving it
+  * target: the column of data which you want the time series decomposition of
+  
+Let us look at how Google is doing. Since `anomalize` is compatible with tidyverse, we can just use `filter`.
+
+```{r}
+
+#open: stock price at the open of trading, in USD
+#close: stock price at the close of trading, in USD
+#high: stock price at the highest point during trading, in USD
+#low: stock price at the lowest point during trading, in USD
+#volume: number of shares traded
+#adjusted: stock price at the close of trading adjusted for stock splits, in USD
+
+targets = c("open","close", "high", "low", "volume", "adjusted")
+time_decompose_methods = c("stl","twitter")
+#maybe make a trend/frequency slider?
+
+groupFANG %>%
+  time_decompose(target = targets[1],method = "stl", message=FALSE)
+```
+
+Whichever method you choose, `time_decompose()` will produce a tibbletime object with at least five columns, the index column whcih contains the date, the observed column, which contains your target, and the season, trend, and remainder columns. The remainder column is what will be used for detecting anomalies.
+
+There are also five other optional arguments for `time_decompose()`:
+
+  * method: the time series decomposition method you want to use (Use quotes)
+    + stl (default): Seasonal Decomposition of Time Series by Loess - works better if the trend component affects the data        more than the seasonal component
+    + twitter: Seasonal Decomposition of Time Series by Median - works better if the seasonal component affects the data          more than the trend component
+
+  * frequency: Controls the seasonal adjustment (removal of seasonality). By default, its input is "auto", but can also a        time-based definition (e.g. "2 weeks"), or a numeric number of observations per frequency (e.g. 10)
+  
+  * trend: Controls the trend component 
+    + For stl, the trend controls the sensitivity of the Loess smoother. 
+    + For twitter, the trend controls the period width of the median.
+  
+  * merge: A boolean which is FALSE by default. If TRUE, it will append results to the original data rather than creating an     entirely new tibbletime 
+  
+  * message: A boolean value whose default is TRUE. If TRUE, it will output information related to tbl_time conversions,
+    frequencies, and trend / median spans if applicable
+
+### Anomalize
+
+Now lets get to the heart of the package, the function `anomalize()`.
+
+At a minimum, `anomalize()` requires two arguments:
+
+  * data: the tibble or tibbletime object you are giving it
+  
+  * target: the column of data which you want to find anomalies in
+  
+`anomalize()` can be used with data that is not from a time series, in which case you would not need to use `time_decompose()`.
+
+However, in order to use `anomalize()`on time series data, we must first decompose it with `time_decompose()`and then feed the results into `anomalize()` where the target argument will equal the remainder generated from `time_decompose()`. 
+
+```{r}
+#decompose
+targets = c("open","close", "high", "low", "volume", "adjusted")
+time_decompose_methods = c("stl","twitter")
+#maybe make a trend/frequency slider for decompose?
+
+########################################################
+
+#anomalize
+anomalize_methods= c("iqr","gesd")
+#range from 0.025 to 0.1
+alpha_value = 0.05
+#slider from 0.05 to 0.5
+max_anom_values = 0.2
+
+groupFANG %>%
+  time_decompose(target = adjusted, method = time_decompose_methods[1], message=FALSE)%>%
+  anomalize(target = remainder, method = anomalize_methods[1],alpha = alpha_value, max_anoms = max_anom_values)
+
+```
+In most cases it will return a tibbletime object appended to the results of `time_decompose`, but with three additional columns remainder_l1, which is the lower bound of the remainder, remainder_l2, which is the upper bound of the remainder, and anomaly, which is simply a yes or no column stating if the observed column is an anomaly or not. However, if the optional argument verbose is set to TRUE, it will return a list.
+
+Speaking of optional arguments, `anomalize` has four of them:
+
+* method: the anomaly detection method you want to use (Use quotes)
+    + iqr(default): Faster, but not as accurate as gesd
+    + gesd: Slower, but has more accurate results compared to iqr
+    
+* alpha: and adjustment parameter (default = 0.05)
+  + For iqr, the alpha controls the x3 parameter. If a value is x3 above or below the ends of the IQR, it is considered an      anomaly. The default value results in x3 parameter. Halving it to 0.025 results in x6 parameter and doubling it a x1.5
+    parameter.
+  + For gesd, alpha adjusts the width of the critical values.
+
+* max_anoms: the maximum percentage of the data that is allowed to be an anomaly. By default, it is 0.2 (20%)
+
+* verbose: A boolean that if TRUE, will return a list containing useful information about the anomalies. If it is FALSE,      it simply returns the data appended with the anomalies as well as the lower and upper limits of the remainder (). 
+
+###Graphing
+
+Now that we have data telling us which of the adjusted stock prices for these companies are anomalies. But this is hard to visualize where and when we have anomalies. Fortunately `anomalize` will do that for us.
+
+There are two ways we can visualize data `plot_anomalies()` and `plot_anomaly_decomposition()`.
+
+Let us first get a general picture of the data by using `plot_anomalies()`. 
+
+Though not needed, in general, prior to using `plot_anomalies()`, we use a function called `time_recompose()` which has a single argument, data, which is a tibble or tibbletime that has been processed with `time_decompose()` and `anomalize()`. It returns a tibbletime object and will construct bands around the normal values with remainder values from `anomalize()` and the trend/median_span values from `time_decompose()`.
+
+`plot_anomalies` has one required argument and that is data which is either a tibble or tibbletime object with items created with the functions listed above. If we use `time_recomposed()` and set the optional argument `time_recomposed` to TRUE, it will use time_recompose() to generate bands around the aproximate limits of normal data.
+
+```{r}
+
+
+ #decompose
+targets = c("open","close", "high", "low", "volume", "adjusted")
+time_decompose_methods = c("stl","twitter")
+#maybe make a trend/frequency slider for decompose?possibly for anomalize?
+
+########################################################
+
+#anomalize
+anomalize_methods= c("iqr","gesd")
+#range from 0.025 to 0.1
+alpha_value = 0.05
+#slider from 0.05 to 0.5
+max_anom_values = 0.2
+########################################################
+
+#plot_anomalies
+
+#color slider
+color_not_anomalies = "#2c3e50"
+color_anomalies = "#e31a1c"
+bands = "grey70"
+#slider from 0 to 1
+dots_alpha = 1
+anomaly_alpha = 1
+bands_alpha = 0
+#slider from 1 to 6
+dot_size = 1.5
+anomaly_size = 4
+groupFANG %>%
+  time_decompose(target = adjusted, method = time_decompose_methods[1], message=FALSE)%>%
+  anomalize(target = remainder, method = anomalize_methods[1],alpha = alpha_value, max_anoms = max_anom_values) %>%
+  time_recompose()%>%
+  plot_anomalies(time_recomposed = TRUE, color_no = color_not_anomalies, color_yes = color_anomalies, 
+                 fill_ribbon = bands, alpha_dots = dots_alpha, alpha_circles = anomaly_alpha, alpha_ribbon = bands_alpha, 
+                 size_dots = dot_size, size_circles = anomaly_size)
+
+
+```
+
+`plot_anomalies`also has many arguments to control aesthetics and is `ggplot2` compatible, making it very useful.
+
+
+`plot_anomaly_decomposition()` is an equally useful graphing function, and also `ggplot2` compatible. It only has one required argument, data, same as `plot_anomaly()` and generates 4 graphs depicting the observed, seasonality, trend, and remainder values. It is very useful for finetuning the optional parameters in `time_decompose()` and `anomalize()` for better anomaly detection.
+
+Like `plot_anomalies`,`plot_anomaly_decomposition()` comes with many aesthetic arguments to control the appearance of the graphs. I have chosen to set the argument ncol (which controls the number of column to display the graphs) to 2 for a better appearance.
+
+```{r}
+
+#decompose
+targets = c("open","close", "high", "low", "volume", "adjusted")
+time_decompose_methods = c("stl","twitter")
+#maybe make a trend/frequency slider for decompose?possibly for anomalize?
+
+########################################################
+
+#anomalize
+anomalize_methods= c("iqr","gesd")
+#range from 0.025 to 0.1
+alpha_value = 0.05
+#slider from 0.05 to 0.5
+max_anom_values = 0.2
+########################################################
+
+#plot_anomalies
+
+#color slider
+color_not_anomalies = "#2c3e50"
+color_anomalies = "#e31a1c"
+
+#slider from 0 to 1
+dots_alpha = 1
+anomaly_alpha = 1
+
+#slider from 1 to 6
+dot_size = 1.5
+anomaly_size = 4
+
+##############################
+pos = c("top", "bottom", "left", "right") #only for anomaly decompositon
+######################
+bands_alpha = 1 #only for plot anomalies
+bands = "grey70" #only for plot anomalies
+#######################
+groupFANG %>%
+  time_decompose(target = adjusted,method = "stl",message=FALSE)%>%
+  anomalize(target = remainder)%>%
+plot_anomaly_decomposition(ncol=2,color_no = color_not_anomalies, color_yes = color_anomalies, 
+                          alpha_dots = dots_alpha, alpha_circles = anomaly_alpha,  
+                          size_dots = dot_size, size_circles = anomaly_size, strip.position = pos[4])
+```
+
+

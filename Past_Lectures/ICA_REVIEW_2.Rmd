@@ -1,0 +1,40 @@
+---
+title: "In Class Review 2"
+author: "Reesa John"
+date: "March 11, 2019"
+output: html_document
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE
+)
+```
+
+```{r}
+library(tidyverse)
+
+cauchy_df_means <- data.frame()
+cauchy_df_medians <- data.frame()
+
+for(i in 1:10){
+  
+  cauchy1 <- rcauchy(100)
+  cauchy2 <- replicate(1000,sample(cauchy1,replace = TRUE),simplify = FALSE)
+  
+  cauchyMeans <- map_dbl(cauchy2,mean)
+  cauchyMedians <- map_dbl(cauchy2,median)
+
+  cauchy_df_means <- rbind(cauchy_df_means,quantile(cauchyMeans, c(0.025, .975)))
+  cauchy_df_medians <- rbind(cauchy_df_medians,quantile(cauchyMedians, c(0.025, .975)))
+    
+}
+
+names(cauchy_df_means) <- c("lower","upper")
+names(cauchy_df_medians) <- c("lower","upper")
+
+cauchy_df_means %>% ggplot()+geom_errorbarh(aes(xmin = lower, xmax = upper, y = 1:10))+ggtitle("Means")
+cauchy_df_medians %>% ggplot()+geom_errorbarh(aes(xmin = lower, xmax = upper, y = 1:10))+ggtitle("Medians")
+```
+
